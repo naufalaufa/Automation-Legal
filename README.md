@@ -19,6 +19,9 @@ npm.cmd run test:login-success:headed # seluruh role, browser terlihat
 npm.cmd run test:e2e:rr # happy path RR sampai Closed
 npm.cmd run test:e2e:kr # happy path KR sampai Closed
 npm.cmd run test:e2e:workflow # seluruh happy/reject flow (mutating)
+npm.cmd run test:waiting:svp # berhenti pada antrean SVP
+npm.cmd run test:waiting:gm # berhenti pada antrean GM
+npm.cmd run test:waiting:vp # berhenti menunggu Wakil Direktur
 npm.cmd run test:headed  # browser terlihat dan menjalankan seluruh test
 npm.cmd run test:ui      # Playwright UI Mode; pilih test lalu klik Run
 npm.cmd run test:debug   # Playwright Inspector, step-by-step
@@ -50,6 +53,7 @@ yang harus dilengkapi. Validation test login tetap dapat dijalankan secara terpi
 Jangan commit `.env`, token, atau storage state. Daftar skenario dan test case ada di
 `TEST-CASES.md`. Penjelasan kode login per role ada di `LOGIN-ROLE-TESTS.md`.
 Dokumentasi workflow lintas role ada di `LEGAL-E2E-WORKFLOW.md`.
+Test scenario hierarchy waiting approval ada di `WAITING-APPROVAL-TESTS.md`.
 
 ## Catatan browser
 

@@ -89,6 +89,20 @@ export class MemoWorkflowPage {
     ).toBeVisible();
   }
 
+  /**
+   * Memastikan memo benar-benar berada di antrean role reviewer aktif.
+   * Status saja belum cukup; kedua action reviewer juga harus tersedia.
+   */
+  async expectReadyForReview(status: MemoStatus): Promise<void> {
+    await this.expectStatus(status);
+    await expect(
+      this.page.getByRole('button', { name: 'Setujui', exact: true }),
+    ).toBeVisible();
+    await expect(
+      this.page.getByRole('button', { name: 'Tolak', exact: true }),
+    ).toBeVisible();
+  }
+
   async submit(memoId: number): Promise<void> {
     await this.expectStatus('Draft');
     await this.page

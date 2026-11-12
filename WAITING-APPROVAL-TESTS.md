@@ -117,7 +117,7 @@ npm.cmd run test:waiting:gm
 npm.cmd run test:waiting:vp
 ```
 
-File `tests/legal-waiting-approval.spec.ts` juga dapat dibuka di VS Code dan setiap
+File `tests/features/internal-memo/specs/legal-waiting-approval.spec.ts` juga dapat dibuka di VS Code dan setiap
 test dapat dijalankan melalui tombol play.
 
 ## Karakteristik keamanan dan maintainability
@@ -140,7 +140,7 @@ Struktur ini mengikuti dokumentasi resmi Playwright untuk
 
 ## Jika hierarchy berubah
 
-1. Perbarui status transisi di `tests/pages/memo-workflow.page.ts`.
+1. Perbarui status transisi di `tests/features/internal-memo/data/workflow.data.ts`.
 2. Tambahkan role/env mapping di `tests/fixtures/legal.fixture.ts` jika ada reviewer
    baru.
 3. Tambahkan satu test independen; jangan meneruskan memo dari test lain.

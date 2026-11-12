@@ -1,21 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { dkiCities } from './data/dki-cities';
-import { LoginPage } from './pages/login.page';
-import { MasterDataPage } from './pages/master-data.page';
+import { featureEnabled } from '../../../support/env';
+import { loginAsLegalRole } from '../../auth/support/credentials';
+import { dkiCities } from '../data/dki-cities.data';
+import { institutionTypes } from '../data/institution-types.data';
+import { MasterDataPage } from '../pages/master-data.page';
 
-const mutationEnabled =
-  process.env.LEGAL_ALLOW_MASTER_DATA_CREATE === 'true';
-
-const institutionTypes = [
-  { testId: 'RR', label: 'Resmi' },
-  { testId: 'KR', label: 'Koordinasi' },
-] as const;
-
-function requiredEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`${name} wajib diisi di file .env`);
-  return value;
-}
+const mutationEnabled = featureEnabled('LEGAL_ALLOW_MASTER_DATA_CREATE');
 
 function uniqueSuffix(): string {
   return Date.now().toString();
@@ -29,13 +19,7 @@ test.describe('Legal staging — create master data @mutating', () => {
   test.setTimeout(60_000);
 
   test.beforeEach(async ({ page }) => {
-    const login = new LoginPage(page);
-    await login.goto();
-    await login.login(
-      requiredEnv('LEGAL_USERNAME_ROLE_SUPERADMIN'),
-      requiredEnv('LEGAL_PASSWORD'),
-    );
-    await expect(page).not.toHaveURL(/\/login$/);
+    await loginAsLegalRole(page, 'superAdmin');
   });
 
   for (const city of dkiCities) {
@@ -65,19 +49,26 @@ test.describe('Legal staging — create master data @mutating', () => {
         page,
       }) => {
         const masterData = new MasterDataPage(page);
-        const suffix = uniqueSuffix();
-        const institutionName =
-          `QA AUTO Instansi ${institutionType.testId} ${city.shortCode} ${suffix}`;
+        // PPK Koordinasi Jakarta Pusat sudah menjadi seed staging. PPW dipakai
+        // agar skenario tetap membuat kombinasi valid yang belum ada.
+        const institutionCode =
+          institutionType.testId === 'KR' && city.slug === 'JAKARTA-PUSAT'
+            ? 'PPW'
+            : institutionType.defaultCode;
 
-        const response = await masterData.createInstitution({
+        const result = await masterData.createInstitution({
           cityName: city.name,
           type: institutionType.label,
-          code: `INS-${institutionType.testId}-${city.shortCode}-${suffix}`,
-          name: institutionName,
+          institutionCode,
         });
 
-        expect(response.ok(), await response.text()).toBeTruthy();
-        await masterData.expectCreated(institutionName);
+        if (result.response) {
+          expect(
+            result.response.ok(),
+            await result.response.text(),
+          ).toBeTruthy();
+        }
+        await masterData.expectCreated(result.name);
       });
     }
   }

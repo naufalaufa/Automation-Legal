@@ -1,7 +1,8 @@
 # Automation Penerima dan Instansi
 
-Automation ini membuat **satu record master baru per command** di Legal staging.
-Data tidak dihapus otomatis dan tidak ikut dijalankan oleh `npm test` default.
+Automation ini membuat atau memastikan **satu record master per command** di Legal
+staging. Data tidak dihapus otomatis dan tidak ikut dijalankan oleh `npm test`
+default.
 
 ## Penerima
 
@@ -51,7 +52,11 @@ memilih tombol Play per kota; command npm di atas memberikan hasil yang sama.
 - `LEGAL_ALLOW_MASTER_DATA_CREATE=true` harus aktif di `.env`.
 - Test memakai Superadmin karena role Admin Legal tidak memiliki permission
   membuat master data ini.
-- Kode, nama, telepon, dan rekening dibuat unik menggunakan timestamp.
+- Penerima memakai kode, nama, telepon, dan rekening unik berbasis timestamp.
+- Form Instansi terbaru memakai master kode (`BAPENDA`, `PPK`, `PPW`, `UPBP`)
+  dan tidak lagi menerima kode/nama bebas. Nama dibentuk backend dari kode + kota.
+- Command Instansi bersifat idempotent: kombinasi jenis, kode, dan kota yang sudah
+  ada diverifikasi, bukan dibuat ulang hingga menghasilkan validasi duplikat 422.
 - Setiap test memiliki browser context baru dan tidak bergantung pada test lain.
 - Test menunggu response POST create dan memastikan record tampil di daftar.
 - Tidak ada operasi edit, delete, atau status toggle tersembunyi.

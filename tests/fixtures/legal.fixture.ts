@@ -1,38 +1,13 @@
 import {
-  expect,
   test as base,
   type BrowserContext,
-  type Page,
 } from '@playwright/test';
-import { LoginPage } from '../pages/login.page';
-
-export type LegalRole =
-  | 'adminLegal'
-  | 'svpLegal'
-  | 'generalManager'
-  | 'viceDirector'
-  | 'staffFinance';
-
-type RoleAction<T> = (page: Page) => Promise<T>;
-export type RunAsRole = <T>(
-  role: LegalRole,
-  action: RoleAction<T>,
-) => Promise<T>;
-
-const roleUsernameVariables: Record<LegalRole, string> = {
-  adminLegal: 'LEGAL_USERNAME_ROLE_ADMIN_LEGAL',
-  svpLegal: 'LEGAL_USERNAME_ROLE_SVP_LEGAL',
-  generalManager: 'LEGAL_USERNAME_ROLE_GENERAL_MANAGER',
-  // Di aplikasi, akun Wakil Direktur dikonfigurasi sebagai role VP.
-  viceDirector: 'LEGAL_USERNAME_ROLE_VP',
-  staffFinance: 'LEGAL_USERNAME_ROLE_STAFF_FINANCE',
-};
-
-function requiredEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`${name} wajib diisi di file .env`);
-  return value;
-}
+import { loginAsLegalRole } from '../features/auth/support/credentials';
+import type {
+  LegalRole,
+  RoleAction,
+  RunAsRole,
+} from '../features/auth/types/auth.types';
 
 /**
  * Fixture callback untuk pergantian role dalam satu business flow.
@@ -49,13 +24,7 @@ export const test = base.extend<{ runAsRole: RunAsRole }>({
       const page = await context.newPage();
 
       try {
-        const login = new LoginPage(page);
-        await login.goto();
-        await login.login(
-          requiredEnv(roleUsernameVariables[role]),
-          requiredEnv('LEGAL_PASSWORD'),
-        );
-        await expect(page).not.toHaveURL(/\/login$/);
+        await loginAsLegalRole(page, role);
         return await action(page);
       } finally {
         openContexts.delete(context);
@@ -68,4 +37,4 @@ export const test = base.extend<{ runAsRole: RunAsRole }>({
   },
 });
 
-export { expect };
+export { expect } from '@playwright/test';

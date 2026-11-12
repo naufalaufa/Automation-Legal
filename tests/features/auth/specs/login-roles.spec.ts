@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
-import { credentialsFor, loginRoles } from './data/login-roles';
-import { LoginPage } from './pages/login.page';
+import { loginRoles } from '../data/roles.data';
+import { LoginPage } from '../pages/login.page';
+import { credentialsFor } from '../support/credentials';
 
 // Login test harus selalu dimulai tanpa cookie/localStorage dari sesi sebelumnya.
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -23,7 +24,11 @@ test.describe('Login berhasil untuk seluruh role Legal', () => {
       });
 
       await test.step(`Login sebagai ${role.label}`, async () => {
-        await loginPage.login(username, password);
+        await loginPage.loginExpectingRole(
+          username,
+          password,
+          role.expectedRole,
+        );
 
         // Menunggu URL final memastikan redirect dan penyimpanan cookie login
         // sudah selesai sebelum dashboard diverifikasi.

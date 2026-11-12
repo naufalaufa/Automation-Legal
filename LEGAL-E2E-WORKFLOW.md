@@ -23,10 +23,17 @@ Happy path yang tervalidasi di staging:
 5. Staff Finance mengunggah bukti pembayaran.
 6. Admin Legal mengunggah lampiran penutup dan menutup memo.
 
-Catatan permission: hasil observasi pada staging 6 November 2026 menunjukkan Staff
-Finance memiliki tombol `Bayar Memo`, tetapi tidak memiliki tombol `Tutup Memo`.
-Tombol penutupan tersedia untuk Admin Legal dan Superadmin. Karena itu implementasi
-mengikuti permission aplikasi aktual, bukan asumsi bahwa Finance menutup memo.
+Catatan permission: observasi 11 November 2026 menunjukkan role `staff_finance`
+masih tersedia, tetapi belum ada user staging yang di-assign ke role tersebut.
+Akibatnya dua happy path belum dapat melewati `Waiting Payment` sampai Superadmin
+menetapkan akun QA Finance dan username itu diisi pada
+`LEGAL_USERNAME_ROLE_STAFF_FINANCE`. Jalur reject SVP/GM/Wakil Direktur tidak
+bergantung pada Finance dan tetap dapat dijalankan. Automation memvalidasi role
+backend sebelum membuat memo happy-path agar salah konfigurasi tidak meninggalkan
+data baru.
+
+Setelah akun Finance tersedia, Staff Finance diharapkan mengunggah bukti pembayaran
+dan Admin Legal menutup memo sesuai pembagian aksi terakhir yang tervalidasi.
 
 ## Cara menjalankan
 
@@ -53,17 +60,18 @@ npm.cmd run test:e2e:workflow
 ```
 
 Semua command memakai `--headed`. Di VS Code, file
-`tests/legal-e2e-workflow.spec.ts` juga dapat dibuka lalu tombol play dipilih pada
+`tests/features/internal-memo/specs/legal-e2e-workflow.spec.ts` juga dapat dibuka lalu tombol play dipilih pada
 test case yang dibutuhkan.
 
 ## Tanggung jawab setiap file
 
-- `tests/legal-e2e-workflow.spec.ts`: skenario bisnis, data test, dan urutan role.
+- `tests/features/internal-memo/specs/legal-e2e-workflow.spec.ts`: skenario bisnis.
+- `tests/features/internal-memo/flows/memo-workflow.flow.ts`: orchestration lintas role.
 - `tests/fixtures/legal.fixture.ts`: membuat session login baru untuk setiap role,
   memastikan cookie tidak bocor, dan selalu menutup BrowserContext.
-- `tests/pages/internal-memo.page.ts`: pembuatan RR/KR dan pembukaan memo berdasarkan
+- `tests/features/internal-memo/pages/internal-memo.page.ts`: pembuatan RR/KR dan pembukaan memo berdasarkan
   nomor IM unik.
-- `tests/pages/memo-workflow.page.ts`: submit, approve/reject, pembayaran, close,
+- `tests/features/internal-memo/pages/memo-workflow.page.ts`: submit, approve/reject, pembayaran, close,
   assertion status, upload, dan validasi response API.
 - `tests/fixtures/memo-automation.png`: fixture upload non-rahasia.
 

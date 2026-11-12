@@ -1,5 +1,5 @@
 /**
- * Wilayah DKI yang diambil dari daftar kota master Legal.
+ * Data wilayah DKI yang diambil dari daftar kota master Legal.
  *
  * `slug` digunakan pada nama test/command, sedangkan `name` harus sama persis
  * dengan opsi yang terlihat di UI agar pemilihan kota tetap eksplisit.

@@ -1,6 +1,6 @@
 # Automation pembuatan Internal Memo
 
-File test: `tests/create-memo.spec.ts`
+File test: `tests/features/internal-memo/specs/create-memo.spec.ts`
 
 Test ini bersifat **mutating**: setiap eksekusi membuat satu memo Draft baru di
 environment staging. Test sengaja tidak dimasukkan ke perintah `npm test` agar
@@ -8,7 +8,7 @@ tidak ikut berjalan bersama regression login.
 
 ## Menjalankan dari VS Code
 
-1. Buka `tests/create-memo.spec.ts`.
+1. Buka `tests/features/internal-memo/specs/create-memo.spec.ts`.
 2. Klik tombol Play di sebelah test RR untuk membuat satu Memo Resmi.
 3. Klik tombol Play di sebelah test KR untuk membuat satu Memo Koordinasi.
 
@@ -41,8 +41,8 @@ npm.cmd run test:create-memo
 
 ## Struktur kode
 
-- `tests/create-memo.spec.ts`: dua skenario bisnis yang muncul sebagai dua tombol
+- `tests/features/internal-memo/specs/create-memo.spec.ts`: dua skenario bisnis yang muncul sebagai dua tombol
   Play terpisah.
-- `tests/pages/internal-memo.page.ts`: locator dan langkah interaksi RR/KR.
+- `tests/features/internal-memo/pages/internal-memo.page.ts`: locator dan langkah interaksi RR/KR.
 - `tests/fixtures/memo-automation.png`: lampiran kecil yang memang dikhususkan
   untuk automation staging.

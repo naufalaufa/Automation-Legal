@@ -4,70 +4,13 @@ import {
   type Page,
   type Response,
 } from '@playwright/test';
-import type { MemoType } from './internal-memo.page';
-
-export type ReviewStage = 'svp' | 'gm' | 'vp';
-export type ReviewDecision = 'approve' | 'reject';
-
-export type MemoStatus =
-  | 'Draft'
-  | 'Waiting SPV'
-  | 'Reject SPV'
-  | 'Waiting GM'
-  | 'Approve GM'
-  | 'Reject GM'
-  | 'Waiting Payment'
-  | 'Reject VP'
-  | 'Finish Payment'
-  | 'Closed';
-
-type ReviewConfig = {
-  method: 'PATCH' | 'PUT';
-  endpoint: string;
-  expectedStatus: MemoStatus;
-};
-
-const reviewConfigs: Record<
+import { reviewConfigs } from '../data/workflow.data';
+import type { MemoType } from '../types/memo.types';
+import type {
+  MemoStatus,
+  ReviewDecision,
   ReviewStage,
-  Record<ReviewDecision, ReviewConfig>
-> = {
-  svp: {
-    approve: {
-      method: 'PATCH',
-      endpoint: 'approve-spv',
-      expectedStatus: 'Waiting GM',
-    },
-    reject: {
-      method: 'PUT',
-      endpoint: 'reject-spv',
-      expectedStatus: 'Reject SPV',
-    },
-  },
-  gm: {
-    approve: {
-      method: 'PUT',
-      endpoint: 'approve-gm',
-      expectedStatus: 'Approve GM',
-    },
-    reject: {
-      method: 'PUT',
-      endpoint: 'reject-gm',
-      expectedStatus: 'Reject GM',
-    },
-  },
-  vp: {
-    approve: {
-      method: 'PUT',
-      endpoint: 'approve-vp',
-      expectedStatus: 'Waiting Payment',
-    },
-    reject: {
-      method: 'PUT',
-      endpoint: 'reject-vp',
-      expectedStatus: 'Reject VP',
-    },
-  },
-};
+} from '../types/workflow.types';
 
 /** Page Object untuk aksi workflow pada halaman detail Internal Memo. */
 export class MemoWorkflowPage {
@@ -76,7 +19,7 @@ export class MemoWorkflowPage {
   async goto(memoId: number, imNumber: string): Promise<void> {
     await this.page.goto(`/internal-memo/${memoId}`);
     await expect(this.page).toHaveURL(
-      new RegExp(`/internal-memo/${memoId}$`),
+      new RegExp(`/internal-memo/${memoId}/?(?:\\?.*)?$`),
     );
     await expect(
       this.page.getByRole('heading', { name: imNumber, exact: true }),
@@ -85,7 +28,11 @@ export class MemoWorkflowPage {
 
   async expectStatus(status: MemoStatus): Promise<void> {
     await expect(
-      this.page.getByText(status, { exact: true }).filter({ visible: true }),
+      this.page
+        .locator('dl')
+        .getByText(status, { exact: true })
+        .filter({ visible: true })
+        .first(),
     ).toBeVisible();
   }
 

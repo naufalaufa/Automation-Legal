@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { LoginPage } from './pages/login.page';
+import { LoginPage } from '../pages/login.page';
 
 test.describe('Legal staging — login', () => {
   test('[TC-LOGIN-001] @smoke root mengarah ke halaman login', async ({ page }) => {

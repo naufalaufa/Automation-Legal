@@ -24,12 +24,16 @@ export class LoginPage {
 
     // Role locator diprioritaskan karena merepresentasikan cara pengguna
     // dan assistive technology mengenali elemen di halaman.
-    this.usernameInput = page.getByRole('textbox', {
-      name: 'Ketik username anda',
-    });
-    this.passwordInput = page.getByRole('textbox', {
-      name: 'Masukkan password',
-    });
+    // Halaman login merender salinan field tersembunyi selama transisi. Filter
+    // visible mencegah locator memilih elemen stale tersebut.
+    this.usernameInput = page
+      .getByPlaceholder('Ketik username anda', { exact: true })
+      .filter({ visible: true })
+      .first();
+    this.passwordInput = page
+      .getByPlaceholder('Masukkan password', { exact: true })
+      .filter({ visible: true })
+      .first();
     this.submitButton = page.getByRole('button', {
       name: 'Masuk',
       exact: true,
@@ -39,15 +43,20 @@ export class LoginPage {
 
   /** Membuka halaman login relatif terhadap baseURL di Playwright config. */
   async goto(): Promise<void> {
-    await this.page.goto('/login');
+    // Tidak menunggu seluruh resource non-kritis (font/version check) karena
+    // kesiapan form diverifikasi langsung lewat assertion di bawah.
+    await this.page.goto('/login', { waitUntil: 'domcontentloaded' });
 
     // Web-first assertions otomatis menunggu sampai UI siap digunakan.
     await expect(this.page).toHaveTitle(
       /^(?:LeMS - Masuk|Legal Management System)$/,
     );
-    await expect(this.usernameInput).toBeVisible();
-    await expect(this.passwordInput).toBeVisible();
-    await expect(this.submitButton).toBeVisible();
+    await expect(
+      this.page.getByRole('heading', { name: 'Selamat Datang', exact: true }),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(this.usernameInput).toBeVisible({ timeout: 15_000 });
+    await expect(this.passwordInput).toBeVisible({ timeout: 15_000 });
+    await expect(this.submitButton).toBeVisible({ timeout: 15_000 });
   }
 
   /** Mengisi credential lalu mengirim form seperti pengguna sebenarnya. */

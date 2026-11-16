@@ -80,7 +80,7 @@ export async function rejectMemo(
   });
 }
 
-async function payAndCloseMemo(
+export async function payAndCloseMemo(
   runAsRole: RunAsRole,
   memo: CreatedMemo,
 ): Promise<void> {

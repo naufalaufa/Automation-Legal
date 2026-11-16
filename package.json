@@ -54,6 +54,8 @@
     "test:export:instansi": "playwright test tests/features/export/specs/export-by-role.spec.ts --grep @export-target-instansi",
     "test:export:banner": "playwright test tests/features/export/specs/export-by-role.spec.ts --grep @export-target-banner-list",
     "test:export:banner-detail": "playwright test tests/features/export/specs/export-by-role.spec.ts --grep @export-target-banner-payment",
+    "test:payment-history": "playwright test tests/features/payment-history/specs/payment-history-e2e.spec.ts",
+    "test:payment-history:headed": "playwright test tests/features/payment-history/specs/payment-history-e2e.spec.ts --headed",
     "test:auth": "playwright test tests/features/auth/specs/login-roles.spec.ts",
     "test:auth:headed": "playwright test tests/features/auth/specs/login-roles.spec.ts --headed",
     "test:headed": "playwright test tests/features/auth/specs/legal-login.spec.ts tests/features/auth/specs/login-roles.spec.ts --headed",
@@ -69,6 +71,8 @@
   "devDependencies": {
     "@playwright/test": "^1.65.0",
     "@types/node": "^26.6.6",
+    "@types/pdf-parse": "^1.1.4",
+    "pdf-parse": "^1.1.1",
     "typescript": "^7.0.2"
   }
 }

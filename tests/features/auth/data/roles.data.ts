@@ -41,6 +41,12 @@ export const loginRoles = [
     usernameEnv: 'LEGAL_USERNAME_ROLE_STAFF_FINANCE',
     expectedRole: 'staff_finance',
   },
+  {
+    id: 'AUDIT',
+    label: 'Audit',
+    usernameEnv: 'LEGAL_USERNAME_ROLE_AUDIT',
+    expectedRole: 'audit',
+  },
 ] as const satisfies readonly LoginRole[];
 
 export const legalRoleAuth: Readonly<Record<LegalRole, LegalRoleAuth>> = {
@@ -67,5 +73,9 @@ export const legalRoleAuth: Readonly<Record<LegalRole, LegalRoleAuth>> = {
   staffFinance: {
     usernameEnv: 'LEGAL_USERNAME_ROLE_STAFF_FINANCE',
     expectedRole: 'staff_finance',
+  },
+  audit: {
+    usernameEnv: 'LEGAL_USERNAME_ROLE_AUDIT',
+    expectedRole: 'audit',
   },
 };

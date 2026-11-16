@@ -75,7 +75,9 @@ for (const role of loginRoles) {
             return;
           }
 
-          await exportPage.expectBannerPaymentHistoryUnavailable();
+          await exportPage.expectBannerPaymentHistoryUnavailable(
+            paymentHistoryBranch,
+          );
         },
       );
     });

@@ -16,6 +16,8 @@ export interface SharedMemoData {
 export interface KrMemoData extends SharedMemoData {
   grandTotal: string;
   termInMonth: string;
+  branchCode?: string;
+  recipientName?: string;
 }
 
 export interface RrMemoData extends SharedMemoData {
@@ -23,11 +25,18 @@ export interface RrMemoData extends SharedMemoData {
   destination: string;
   amount: string;
   paymentMethod?: PaymentMethod;
+  branchCode?: string;
 }
 
 export interface RrMultiplePaymentsData extends SharedMemoData {
   termInMonth: string;
   payments: RrPaymentData[];
+  branchCode?: string;
+}
+
+export interface KrMemoCreationResult {
+  response: import('@playwright/test').Response;
+  recipientName: string;
 }
 
 export interface CreatedMemo {

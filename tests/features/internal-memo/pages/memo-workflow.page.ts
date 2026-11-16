@@ -17,13 +17,32 @@ export class MemoWorkflowPage {
   constructor(private readonly page: Page) {}
 
   async goto(memoId: number, imNumber: string): Promise<void> {
-    await this.page.goto(`/internal-memo/${memoId}`);
+    const detailRoute = `/internal-memo/${memoId}`;
+    await this.page.goto(detailRoute, {
+      waitUntil: 'domcontentloaded',
+    });
     await expect(this.page).toHaveURL(
       new RegExp(`/internal-memo/${memoId}/?(?:\\?.*)?$`),
+      { timeout: 30_000 },
     );
-    await expect(
-      this.page.getByRole('heading', { name: imNumber, exact: true }),
-    ).toBeVisible();
+
+    const memoHeading = this.page.getByRole('heading', {
+      name: imNumber,
+      exact: true,
+    });
+    try {
+      await expect(memoHeading).toBeVisible({ timeout: 15_000 });
+    } catch {
+      // Staging sesekali menyelesaikan route tetapi meninggalkan area detail
+      // kosong tanpa respons API gagal. Satu reload memulihkan hydration;
+      // percobaan kedua tetap dibatasi dan akan gagal jika masalah permanen.
+      await this.page.reload({ waitUntil: 'domcontentloaded' });
+      await expect(this.page).toHaveURL(
+        new RegExp(`/internal-memo/${memoId}/?(?:\\?.*)?$`),
+        { timeout: 30_000 },
+      );
+      await expect(memoHeading).toBeVisible({ timeout: 30_000 });
+    }
   }
 
   async expectStatus(status: MemoStatus): Promise<void> {

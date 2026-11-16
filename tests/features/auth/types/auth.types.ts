@@ -6,7 +6,8 @@ export type LoginRoleId =
   | 'GENERAL_MANAGER'
   | 'SVP_LEGAL'
   | 'ADMIN_LEGAL'
-  | 'STAFF_FINANCE';
+  | 'STAFF_FINANCE'
+  | 'AUDIT';
 
 export type BackendRoleName =
   | 'superadmin'
@@ -14,7 +15,8 @@ export type BackendRoleName =
   | 'gm'
   | 'spv_legal'
   | 'admin'
-  | 'staff_finance';
+  | 'staff_finance'
+  | 'audit';
 
 export interface LoginRole {
   id: LoginRoleId;
@@ -44,7 +46,8 @@ export type LegalRole =
   | 'svpLegal'
   | 'generalManager'
   | 'viceDirector'
-  | 'staffFinance';
+  | 'staffFinance'
+  | 'audit';
 
 export type RoleAction<T> = (page: Page) => Promise<T>;
 

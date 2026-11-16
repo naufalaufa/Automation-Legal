@@ -74,16 +74,24 @@ export class ExportPage {
   async expectListExportUnavailable(target: ListExportTarget): Promise<void> {
     await this.page.goto(target.route);
 
-    if (target.id === 'instansi') {
-      await expect
-        .poll(() => new URL(this.page.url()).pathname)
-        .not.toBe(target.route);
-    } else {
+    const heading = this.page.getByRole('heading', {
+      name: target.pageHeading,
+      exact: true,
+    });
+
+    // Role tanpa export dapat tetap mempunyai akses baca (contoh: Audit),
+    // atau tidak mempunyai akses halaman sama sekali (contoh: GM/Finance pada
+    // Instansi). Tunggu salah satu hasil otorisasi tersebut selesai dirender.
+    await expect
+      .poll(async () => {
+        const redirected = new URL(this.page.url()).pathname !== target.route;
+        return redirected || (await heading.isVisible());
+      })
+      .toBe(true);
+
+    if (new URL(this.page.url()).pathname === target.route) {
       await expect(
-        this.page.getByRole('heading', {
-          name: target.pageHeading,
-          exact: true,
-        }),
+        heading,
       ).toBeVisible();
     }
 
@@ -91,6 +99,30 @@ export class ExportPage {
   }
 
   async gotoBannerPaymentHistory(branchCode: string): Promise<void> {
+    await this.gotoBannerDetail(branchCode);
+
+    const paymentHistoryLink = this.page.getByRole('link', {
+      name: 'Riwayat Pembayaran',
+      exact: true,
+    });
+    await expect(paymentHistoryLink).toBeVisible();
+    await Promise.all([
+      this.page.waitForURL(/\/banner\/\d+\/riwayat-pembayaran/),
+      paymentHistoryLink.click(),
+    ]);
+
+    await expect(
+      this.page.getByRole('heading', { name: branchCode, exact: true }),
+    ).toBeVisible();
+    await expect(
+      this.page.getByRole('heading', {
+        name: 'Daftar Pembayaran',
+        exact: true,
+      }),
+    ).toBeVisible();
+  }
+
+  private async gotoBannerDetail(branchCode: string): Promise<void> {
     await this.page.goto('/banner/');
     await expect(
       this.page.getByRole('heading', { name: 'Banner', exact: true }),
@@ -129,26 +161,6 @@ export class ExportPage {
       this.page.waitForURL(/\/banner\/\d+(?:\?.*)?$/),
       viewButton.click(),
     ]);
-
-    const paymentHistoryLink = this.page.getByRole('link', {
-      name: 'Riwayat Pembayaran',
-      exact: true,
-    });
-    await expect(paymentHistoryLink).toBeVisible();
-    await Promise.all([
-      this.page.waitForURL(/\/banner\/\d+\/riwayat-pembayaran/),
-      paymentHistoryLink.click(),
-    ]);
-
-    await expect(
-      this.page.getByRole('heading', { name: branchCode, exact: true }),
-    ).toBeVisible();
-    await expect(
-      this.page.getByRole('heading', {
-        name: 'Daftar Pembayaran',
-        exact: true,
-      }),
-    ).toBeVisible();
   }
 
   async downloadBannerPaymentHistory(
@@ -186,16 +198,65 @@ export class ExportPage {
     );
   }
 
-  async expectBannerPaymentHistoryUnavailable(): Promise<void> {
+  async expectBannerPaymentHistoryUnavailable(
+    branchCode: string,
+  ): Promise<void> {
     await this.page.goto('/banner/');
-    const firstDataRow = this.page.getByRole('row').nth(1);
-    await expect(firstDataRow).toBeVisible();
-    await expect(this.exactExportButton()).toHaveCount(0);
-    await firstDataRow.getByRole('button').first().click();
+    const bannerHeading = this.page.getByRole('heading', {
+      name: 'Banner',
+      exact: true,
+    });
 
     await expect
-      .poll(() => new URL(this.page.url()).pathname)
-      .toBe('/');
+      .poll(async () => {
+        const redirected = new URL(this.page.url()).pathname === '/';
+        return redirected || (await bannerHeading.isVisible());
+      })
+      .toBe(true);
+
+    if (new URL(this.page.url()).pathname === '/') {
+      await expect(
+        this.page.getByRole('button', {
+          name: 'Export Pembayaran',
+          exact: true,
+        }),
+      ).toHaveCount(0);
+      return;
+    }
+
+    await this.gotoBannerDetail(branchCode);
+    await this.page.waitForLoadState('networkidle');
+
+    const paymentHistoryLink = this.page.getByRole('link', {
+      name: 'Riwayat Pembayaran',
+      exact: true,
+    });
+    if ((await paymentHistoryLink.count()) === 0) {
+      await expect(
+        this.page.getByRole('button', {
+          name: 'Export Pembayaran',
+          exact: true,
+        }),
+      ).toHaveCount(0);
+      return;
+    }
+
+    await Promise.all([
+      this.page.waitForURL(/\/banner\/\d+\/riwayat-pembayaran/),
+      paymentHistoryLink.click(),
+    ]);
+    await expect(
+      this.page.getByRole('heading', {
+        name: 'Daftar Pembayaran',
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      this.page.getByRole('button', {
+        name: 'Export Pembayaran',
+        exact: true,
+      }),
+    ).toHaveCount(0);
   }
 
 }

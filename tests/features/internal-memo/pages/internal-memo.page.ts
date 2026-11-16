@@ -1,6 +1,7 @@
 import { expect, type Locator, type Page, type Response } from '@playwright/test';
 import type {
   KrMemoData,
+  KrMemoCreationResult,
   MemoType,
   PaymentMethod,
   RrMemoData,
@@ -90,6 +91,7 @@ export class InternalMemoPage {
       description: data.description,
       attachmentPath: data.attachmentPath,
       termInMonth: data.termInMonth,
+      branchCode: data.branchCode,
       payments: [
         {
           method: data.paymentMethod ?? 'Tunai',
@@ -111,8 +113,8 @@ export class InternalMemoPage {
     const dialog = await this.prepareRrSecondStep(data);
     await this.selectSearchOption(
       dialog.locator('[aria-placeholder="Cari cabang..."]').first(),
-      'GGP005',
-      'GGP005'
+      data.branchCode ?? 'GGP005',
+      data.branchCode ?? 'GGP005',
     );
     await dialog
       .locator('input[name="memo_details[0].term_in_month"]')
@@ -178,22 +180,36 @@ export class InternalMemoPage {
 
   /** Mengisi field khusus KR lalu menyimpan memo sebagai Draft. */
   async createKrMemo(data: KrMemoData): Promise<Response> {
-    const dialog = await this.prepareKrSecondStep(data);
+    const result = await this.createKrMemoWithSelection(data);
+    return result.response;
+  }
+
+  /**
+   * Membuat memo KR dan mengembalikan penerima yang benar-benar dipilih UI.
+   * Metadata ini dipakai oleh test riwayat agar tidak menebak data master.
+   */
+  async createKrMemoWithSelection(
+    data: KrMemoData,
+  ): Promise<KrMemoCreationResult> {
+    const { dialog, recipientName } = await this.prepareKrSecondStep(data);
     await dialog
       .locator('input[name="term_in_month"]')
       .fill(data.termInMonth);
     await this.selectSearchOption(
       dialog.locator('[aria-placeholder="Cari cabang..."]'),
-      'GGP005',
-      'GGP005'
+      data.branchCode ?? 'GGP005',
+      data.branchCode ?? 'GGP005',
     );
 
-    return this.submitMemo(dialog, 'Simpan Memo Koordinasi');
+    return {
+      response: await this.submitMemo(dialog, 'Simpan Memo Koordinasi'),
+      recipientName,
+    };
   }
 
   /** Membuat KR yang berlaku untuk seluruh cabang melalui switch resmi UI. */
   async createKrMemoWithAllBranches(data: KrMemoData): Promise<Response> {
-    const dialog = await this.prepareKrSecondStep(data);
+    const { dialog } = await this.prepareKrSecondStep(data);
     await dialog
       .locator('input[name="term_in_month"]')
       .fill(data.termInMonth);
@@ -213,7 +229,7 @@ export class InternalMemoPage {
   /** Memastikan memo hasil submit tampil kembali pada daftar. */
   async expectMemoCreated(imNumber: string): Promise<void> {
     await expect(this.page.getByRole('dialog')).toBeHidden();
-    await expect(this.page.getByText(imNumber, { exact: true }).first()).toBeVisible();
+    await expect(await this.findMemoRow(imNumber)).toBeVisible();
   }
 
   /**
@@ -222,20 +238,48 @@ export class InternalMemoPage {
    * tombol pertama dibatasi ke baris memo yang tepat sebelum diklik.
    */
   async openMemoByNumber(imNumber: string): Promise<number> {
-    const row = this.page.getByRole('row').filter({ hasText: imNumber });
-    await expect(row).toHaveCount(1);
-    await row.getByRole('button').first().click();
+    const row = await this.findMemoRow(imNumber);
+    await Promise.all([
+      this.page.waitForURL(/\/internal-memo\/\d+\/?(?:\?.*)?$/, {
+        timeout: 30_000,
+      }),
+      row.getByRole('button').first().click(),
+    ]);
 
-    await expect(this.page).toHaveURL(
-      /\/internal-memo\/\d+\/?(?:\?.*)?$/,
-    );
     await expect(
       this.page.getByRole('heading', { name: imNumber, exact: true }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 30_000 });
 
     const match = new URL(this.page.url()).pathname.match(/\/internal-memo\/(\d+)$/);
     if (!match) throw new Error(`ID memo tidak ditemukan dari URL: ${this.page.url()}`);
     return Number(match[1]);
+  }
+
+  private async findMemoRow(imNumber: string): Promise<Locator> {
+    const search = this.page.getByPlaceholder(
+      'Cari nomor IM atau deskripsi...',
+      { exact: true },
+    );
+    const row = this.page.getByRole('row').filter({ hasText: imNumber });
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await expect(search).toBeVisible();
+      await search.fill(imNumber);
+      await search.press('Enter');
+
+      try {
+        await expect(row).toHaveCount(1, { timeout: 15_000 });
+        return row;
+      } catch (error) {
+        if (attempt === 1) throw error;
+        // Setelah create, refresh daftar staging kadang menyelesaikan request
+        // dengan tabel kosong. Satu reload + pencarian unik membedakan render
+        // transien dari record yang benar-benar tidak tersimpan.
+        await this.page.reload({ waitUntil: 'domcontentloaded' });
+      }
+    }
+
+    return row;
   }
 
   /** Memastikan jumlah cabang pada halaman detail sesuai hasil form. */
@@ -282,11 +326,13 @@ export class InternalMemoPage {
       .click();
   }
 
-  private async selectFirstAvailableOption(combobox: Locator): Promise<void> {
+  private async selectFirstAvailableOption(combobox: Locator): Promise<string> {
     await combobox.click();
     const firstOption = this.visibleOptions().first();
     await expect(firstOption).toBeVisible();
+    const selectedText = (await firstOption.innerText()).trim();
     await firstOption.click();
+    return selectedText;
   }
 
   private async selectVisibleOption(optionName: string): Promise<void> {
@@ -297,6 +343,12 @@ export class InternalMemoPage {
     await option.click();
   }
 
+  private normalizeRecipientName(value: string): string {
+    // Combobox menampilkan penerima sebagai "(KODE) Nama", sedangkan endpoint
+    // pencarian dan heading detail menerima nama tanpa prefix kode.
+    return value.replace(/^\([^)]+\)\s*/, '').split(/\r?\n/)[0].trim();
+  }
+
   private async prepareRrSecondStep(data: SharedMemoData): Promise<Locator> {
     const dialog = await this.openCreateForm('RR');
     await this.fillSharedInformation(dialog, data);
@@ -304,7 +356,9 @@ export class InternalMemoPage {
     return dialog;
   }
 
-  private async prepareKrSecondStep(data: KrMemoData): Promise<Locator> {
+  private async prepareKrSecondStep(
+    data: KrMemoData,
+  ): Promise<{ dialog: Locator; recipientName: string }> {
     const dialog = await this.openCreateForm('KR');
 
     // Penerima dan rekening baru tersedia setelah kota dipilih.
@@ -323,16 +377,31 @@ export class InternalMemoPage {
     await this.selectFirstAvailableOption(
       dialog.locator('[aria-placeholder="Pilih kota terlebih dahulu"]'),
     );
-    await this.selectFirstAvailableOption(
-      dialog.locator('[aria-placeholder="Cari penerima..."]'),
-    );
+    const recipient = dialog.locator('[aria-placeholder="Cari penerima..."]');
+    let recipientName: string;
+    if (data.recipientName) {
+      await this.selectSearchOption(
+        recipient,
+        data.recipientName,
+        data.recipientName,
+      );
+      recipientName = this.normalizeRecipientName(
+        (await recipient.inputValue()).trim() || data.recipientName,
+      );
+    } else {
+      const optionText = await this.selectFirstAvailableOption(recipient);
+      recipientName = this.normalizeRecipientName(
+        (await recipient.inputValue()).trim() ||
+          optionText,
+      );
+    }
     await this.selectFirstAvailableOption(
       dialog.locator('[aria-placeholder="Pilih rekening..."]'),
     );
     await dialog.locator('input[name="grand_total"]').fill(data.grandTotal);
     await this.uploadAndWaitUntilFinished(dialog, data.attachmentPath);
     await this.goToSecondStep(dialog);
-    return dialog;
+    return { dialog, recipientName };
   }
 
   private async fillRrPayment(

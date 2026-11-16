@@ -73,4 +73,7 @@ export const exportPermissions: Readonly<
     'banner',
     'banner-payment-history',
   ],
+  // Audit memiliki akses baca ke halaman-halaman ini, tetapi staging tidak
+  // memberikan aksi Export pada daftar maupun riwayat pembayaran Banner.
+  AUDIT: [],
 };

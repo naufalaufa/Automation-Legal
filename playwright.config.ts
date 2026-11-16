@@ -21,6 +21,10 @@ if (new URL(baseURL).hostname !== new URL(stagingBaseURL).hostname) {
 export default defineConfig({
   testDir: './tests',
   fullyParallel: false,
+  expect: {
+    // Staging merender beberapa halaman melalui skeleton setelah route berubah.
+    timeout: 15_000,
+  },
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
@@ -33,7 +37,8 @@ export default defineConfig({
     actionTimeout: 10_000,
     navigationTimeout: 30_000,
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    video:
+      process.env.PLAYWRIGHT_VIDEO === 'off' ? 'off' : 'retain-on-failure',
     trace: 'on-first-retry',
   },
 
